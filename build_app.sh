@@ -1,15 +1,26 @@
 #!/bin/bash
-# Builds "PDF Annotate.app" into ./build
+# Builds a universal (Apple silicon + Intel) "PDF Annotate.app" into ./build,
+# plus a zip of it ready to attach to a GitHub release.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-swift build -c release
-BIN="$(swift build -c release --show-bin-path)/PDFAnnotate"
+VERSION="1.0.0"
+BUILD_NUMBER="1"
+
+for arch in arm64 x86_64; do
+  swift build -c release --triple "$arch-apple-macosx13.0"
+done
+mkdir -p build
+BIN="build/PDFAnnotate-universal"
+lipo -create \
+  .build/arm64-apple-macosx/release/PDFAnnotate \
+  .build/x86_64-apple-macosx/release/PDFAnnotate \
+  -output "$BIN"
 
 APP="build/PDF Annotate.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN" "$APP/Contents/MacOS/PDFAnnotate"
+mv "$BIN" "$APP/Contents/MacOS/PDFAnnotate"
 
 # App icon: icon.png (square, ideally 1024px+) -> AppIcon.icns
 if [ -f icon.png ]; then
@@ -34,8 +45,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleExecutable</key><string>PDFAnnotate</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>2.0</string>
-  <key>CFBundleVersion</key><string>2</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
@@ -55,4 +66,9 @@ PLIST
 codesign --force --sign - "$APP" >/dev/null 2>&1
 # Nudge Finder/Dock to pick up a changed icon.
 touch "$APP"
-echo "Built: $PWD/$APP"
+ZIP="build/PDF-Annotate-$VERSION-macOS-universal.zip"
+rm -f "$ZIP"
+ditto -c -k --keepParent "$APP" "$ZIP"
+
+echo "Built: $PWD/$APP ($(lipo -archs "$APP/Contents/MacOS/PDFAnnotate"))"
+echo "Zip:   $PWD/$ZIP"

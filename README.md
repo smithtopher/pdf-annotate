@@ -1,9 +1,26 @@
 # PDF Annotate
 
+<img src="icon.png" alt="PDF Annotate icon" width="160">
+
 A small native macOS app for marking up PDFs: add text, highlight, draw shapes, lines and
 freehand strokes, place images, edit text already on the page, and save.
 
 Built with AppKit and PDFKit. It has no dependencies and doesn't need Xcode; the Command Line Tools are enough.
+
+## Download
+
+Get the latest `PDF-Annotate-…-macOS-universal.zip` from
+[Releases](https://github.com/smithtopher/pdf-annotate/releases). Unzip it and move
+**PDF Annotate.app** into `/Applications`. It runs natively on both Apple silicon and Intel Macs
+(macOS 13 or later).
+
+The app isn't notarized by Apple, so macOS blocks it the first time you open it. To allow it,
+open it once, then go to **System Settings → Privacy & Security** and click **Open Anyway**.
+Or run this command:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/PDF Annotate.app"
+```
 
 ## Build & run
 
@@ -12,8 +29,11 @@ Built with AppKit and PDFKit. It has no dependencies and doesn't need Xcode; the
 open "build/PDF Annotate.app"
 ```
 
-Requires macOS 13 or later. The script builds a release binary, wraps it in an app bundle
-using `icon.png` as the app icon, and ad-hoc signs it. Drag the app into `/Applications`
+Requires macOS 13 or later. The script builds release binaries for Apple silicon and Intel,
+combines them into one universal binary, and wraps it in an app bundle using `icon.png` as
+the icon. It then ad-hoc signs the app and writes a zip for releases to
+`build/PDF-Annotate-<version>-macOS-universal.zip`. The version number is set at the top of the
+script. Drag the app into `/Applications`
 to keep it. To make it your default PDF app, use Finder → Get Info on a PDF → Open with →
 PDF Annotate → Change All.
 
@@ -74,7 +94,7 @@ close or quit with unsaved changes.
 
 ```
 Package.swift                      Swift package (executable target)
-build_app.sh                       Builds build/PDF Annotate.app, including the icon
+build_app.sh                       Builds the universal app + release zip into build/
 icon.png                           App icon source
 Sources/PDFAnnotate/
   main.swift                       App delegate, menus, window, toolbar, open/save
